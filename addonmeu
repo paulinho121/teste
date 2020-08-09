@@ -1,0 +1,97 @@
+#### TV Show #######
+from tmdbv3api import TMDb, TV, Season, Episode
+from IMDBAPI import IMDB
+import pandas as pd
+import json
+
+imdb = IMDB()
+tmdb = TMDb()
+tmdb.api_key = 'bf8c74e04c3336b4227199a09a15f391'
+tmdb.language = 'pt-BR'
+#tmdb.language = 'en-US'
+tmdb.debug = False
+
+# LINK do CSV com conteudo a gerar!!!
+uri = "https://raw.githubusercontent.com/robertotrevisan/teste1/master/series.csv"
+df_series = pd.read_csv(uri)
+
+tv = TV()
+myTV = tv.details(df_series["moviedb"][0])
+idsTV = tv.external_ids(df_series["moviedb"][0])
+
+generos = ""
+for item in myTV.genres:
+  generos += item["name"] + ", "
+
+generos = generos[:-2]
+
+season = Season()
+temporada = season.details(df_series["moviedb"][0], df_series["temporada"][0])
+#print(temporada.poster_path)
+
+if myTV.backdrop_path == None:
+  fanart = "https://image.tmdb.org/t/p/original"+myTV.poster_path
+else:
+  fanart = "https://image.tmdb.org/t/p/original"+str(myTV.backdrop_path)
+
+if temporada.poster_path == None:
+  thumb = "https://image.tmdb.org/t/p/original"+myTV.poster_path
+else:
+  thumb = "https://image.tmdb.org/t/p/original"+str(temporada.poster_path)
+
+if temporada.overview == "":
+  sinopse = myTV.overview
+else:
+  sinopse = temporada.overview
+
+print("<channels></channels>")
+print("<channel>")
+print("<name>[B][COLOR blue]Nordes[/COLOR][COLOR white]TV[/COLOR] [COLOR lime]●[/COLOR]  [COLOR white]"+myTV.name+"[/COLOR] [COLOR orange]IMDb "+imdb.getRatingByImdbId(idsTV.imdb_id)+"[/COLOR][/B]</name>")
+print("<externallink>http://nordestv.gabserv.com.br/Sertao/Nordeste/SERIES/</externallink>")
+print("<thumbnail></thumbnail>")
+print("<fanart></fanart>")
+print("<info>[COLOR blue][B]Nordes[/B][/COLOR][COLOR white][B]TV[/B][/COLOR] [COLOR white][B]"+myTV.overview+"[/B][/COLOR]</info>")
+print("</channel>")
+print("</channels>")
+print("\n")
+print("<channels></channels>")
+print("<channel>")
+print("<name>[B][COLOR blue]Nordes[/COLOR][COLOR white]TV[/COLOR] [COLOR lime]●[/COLOR] [COLOR yellow] "+str(temporada.season_number)+"º Temporada [/COLOR] [COLOR white]"+myTV.name+" [/COLOR][/B]</name>")
+print("<thumbnail>"+thumb+"</thumbnail>")
+print("<fanart>"+fanart+"</fanart>")
+print("<genre>"+generos+"</genre>")
+print("\n")
+print("<item>")
+print("<title>[B][COLOR yellow]" + str(temporada.season_number) + "º Temporada Trailer[/COLOR][/B]</title>")
+print("<thumbnail>"+thumb+"</thumbnail>")
+print("<link>plugin://plugin.video.youtube/?action=play_video&amp;videoid="+df_series["trailer"][0]+"</link>")
+print("<info>"+sinopse+"</info>")
+print("</item>")
+print("\n")
+
+for i, j in df_series.iterrows():
+  season = Season()
+  temporada = season.details(j["moviedb"], j["temporada"])
+
+  #print(j["episodio"])
+  epi = Episode()
+  capitulo = epi.details(j["moviedb"],j["temporada"],j["episodio"])
+  episodio = str(j["episodio"])
+
+  if temporada.poster_path == None:
+    thumb = "https://image.tmdb.org/t/p/original"+myTV.poster_path
+  else:
+    thumb = "https://image.tmdb.org/t/p/original"+temporada.poster_path
+
+  if capitulo.overview == "":
+    capitulo_sinopse = myTV.overview
+  else:
+    capitulo_sinopse = capitulo.overview
+
+  print("<item>")
+  print("<title>[B][COLOR blue]Nordes[/COLOR][COLOR white]TV[/COLOR] [COLOR lime]●[/COLOR][COLOR white] " + capitulo.name + " EP: " + episodio + " [/COLOR][/B]</title>")
+  print("<thumbnail>"+thumb+"</thumbnail>")
+  print("<link>plugin://plugin.video.gdrive?mode=streamURL&amp;url=https://drive.google.com/file/d/"+j["gdrive"]+"/view?usp=sharing</link>")
+  print("<info>"+capitulo_sinopse+"</info>")
+  print("</item>")
+  print("\n")
